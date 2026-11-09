@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chord Console</title>
+<style>
+:root{--bg:#f3f5f9;--p:#ffffff;--p2:#eef2f8;--ln:#d5dce8;--tx:#16202e;--mut:#5d6e86;--teal:#0f9d8a;--amb:#d97706;--vio:#7c5cd6;--red:#d63c3c;
+--mono:ui-monospace,Menlo,Consolas,monospace;--sans:system-ui,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 var(--sans);padding:16px max(16px,env(safe-area-inset-left))}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{margin:0;font:700 20px var(--mono);letter-spacing:.04em;color:var(--teal)}
+h1 span{color:var(--mut);font-weight:400}
+.tag{font:12px var(--mono);color:var(--mut);margin-left:auto}
+.bar{display:flex;gap:8px;flex-wrap:wrap;background:var(--p);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-bottom:14px;align-items:end}
+.bar label{display:flex;flex-direction:column;font:11px var(--mono);color:var(--mut);gap:3px;text-transform:uppercase;letter-spacing:.06em}
+input,select{background:var(--bg);border:1px solid var(--ln);color:var(--tx);border-radius:6px;padding:7px 9px;font:13px var(--mono);min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+button{background:var(--teal);color:#fff;border:0;border-radius:6px;padding:8px 13px;font:600 13px var(--sans);cursor:pointer}
+button.g{background:transparent;color:var(--teal);border:1px solid var(--teal)}
+button.r{background:transparent;color:var(--red);border:1px solid var(--red)}
+button:hover{filter:brightness(1.12)}
+.sep{width:1px;align-self:stretch;background:var(--ln);margin:0 4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.k{background:var(--p);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;border-top:3px solid var(--teal)}
+.k:nth-child(2){border-top-color:var(--vio)}.k:nth-child(3){border-top-color:var(--amb)}.k:nth-child(4){border-top-color:var(--teal)}.k:nth-child(5){border-top-color:var(--vio)}.k:nth-child(6){border-top-color:var(--amb)}
+.k small{display:block;font:11px var(--mono);color:var(--mut);text-transform:uppercase;letter-spacing:.07em}
+.k b{font:700 26px var(--mono)}
+.card{background:var(--p);border:1px solid var(--ln);border-radius:10px;padding:12px;min-width:0;margin-bottom:14px}
+.card h2{margin:0 0 8px;font:600 12px var(--mono);color:var(--mut);text-transform:uppercase;letter-spacing:.09em}
+.two{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.two .card{margin-bottom:0}.two{margin-bottom:14px}}
+svg{display:block;width:100%;height:auto}
+svg text{font-family:var(--mono)}
+table{border-collapse:collapse;width:100%;font:12.5px var(--mono)}
+th{color:var(--mut);text-align:left;font-weight:600;padding:5px 8px;border-bottom:1px solid var(--ln);font-size:11px;text-transform:uppercase}
+td{padding:5px 8px;border-bottom:1px solid var(--ln);white-space:nowrap}
+.scroll{overflow:auto;max-height:300px}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}
+.steps li{padding:6px 10px;border-left:3px solid var(--amb);background:var(--p2);border-radius:4px;animation:in .35s both}
+.steps li.ok{border-color:var(--teal)}
+@keyframes in{from{opacity:0;transform:translateX(-8px)}}
+.arc{fill:none;stroke:var(--amb);stroke-width:2.6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw .7s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fa{fill:none;stroke:var(--vio);stroke-width:1.5;stroke-dasharray:4 3;opacity:.85}
+.nd{cursor:pointer}
+.nd:hover circle{stroke:var(--tx)}
+.msg{color:var(--red);font:12px var(--mono);min-height:1em;margin:0 0 8px}
+.log{max-height:170px;overflow:auto;font:12px var(--mono);color:var(--mut);display:grid;gap:3px}
+.log b{color:var(--tx)}
+@media(prefers-reduced-motion:reduce){.arc{animation-duration:.01s}.steps li{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>CHORD<span>/console</span></h1>
+  <span class="tag" id="tag"></span>
+</header>
+
+<div class="bar">
+  <label>m (bits)<input id="m" type="number" min="3" max="12" value="6" style="width:70px"></label>
+  <label>Nœuds (ids ou noms)<input id="nodes" value="1, 8, 14, 21, 32, 38, 42, 48, 51, 56" style="width:260px"></label>
+  <button id="create">Créer</button>
+  <label>N aléatoire<input id="nr" type="number" min="1" max="500" value="20" style="width:80px"></label>
+  <button class="g" id="rand">Générer</button>
+  <span class="sep"></span>
+  <label>Ajouter nœud<input id="addid" placeholder="id ou nom" style="width:110px"></label>
+  <button class="g" id="add">Ajouter</button>
+  <label>Retirer<select id="rm"></select></label>
+  <button class="r" id="del">Retirer</button>
+</div>
+<p class="msg" id="msg"></p>
+
+<div class="kpis">
+  <div class="k"><small>Nœuds</small><b id="k1">0</b></div>
+  <div class="k"><small>Espace 2^m</small><b id="k2">0</b></div>
+  <div class="k"><small>Clés</small><b id="k3">0</b></div>
+  <div class="k"><small>Dernier lookup</small><b id="k4">–</b></div>
+  <div class="k"><small>Sauts moyens</small><b id="k5">–</b></div>
+  <div class="k"><small>½·log₂ N</small><b id="k6">–</b></div>
+</div>
+
+<div class="card">
+  <h2>Anneau Chord (identifiants 0 → 2^m − 1)</h2>
+  <svg id="ruler" viewBox="0 0 600 600" role="img" aria-label="Anneau Chord" style="max-width:640px;margin:auto"></svg>
+  <p class="msg" style="color:var(--mut)">Clique sur un nœud pour afficher ses doigts (arcs violets en pointillés). Les arcs orange sont le trajet d'un lookup.</p>
+</div>
+
+<div class="card">
+  <h2>Exercices du TD (clic = chargement + résolution animée)</h2>
+  <div class="bar" style="border:0;padding:0;background:none;margin:0 0 8px">
+    <b style="font:600 13px var(--mono);align-self:center;color:var(--vio)">Ex. 1 (m = 7)</b>
+    <button class="g" data-td="e1">Anneau</button><button class="g" data-td="e1t">Finger table N80</button><button class="g" data-td="e1l">Lookup 42 depuis N80</button><button class="g" data-td="e1j">Join N64</button><button class="r" data-td="e1c">Panne N45</button>
+  </div>
+  <div class="bar" style="border:0;padding:0;background:none;margin:0">
+    <b style="font:600 13px var(--mono);align-self:center;color:var(--vio)">Ex. 2 (m = 6)</b>
+    <button class="g" data-td="e2">Anneau</button><button class="g" data-td="e2t">Finger table N8</button><button class="g" data-td="e2l">Lookup 54 depuis N8</button><button class="r" data-td="e2c">Panne N42</button><button class="g" data-td="e2l2">Relancer lookup 54</button>
+  </div>
+  <p class="msg" id="tdnote" style="color:var(--mut);margin:8px 0 0"></p>
+</div>
+
+<div class="two">
+  <div class="card">
+    <h2>Lookup</h2>
+    <div class="bar" style="border:0;padding:0;background:none;margin-bottom:8px">
+      <label>Clé<input id="key" value="54" style="width:110px"></label>
+      <label>Départ<select id="start"></select></label>
+      <button id="go">Chercher</button>
+      <button class="g" id="put">Stocker la clé</button>
+    </div>
+    <ol class="steps" id="steps"></ol>
+  </div>
+  <div class="card">
+    <h2>Finger table <span id="fn"></span></h2>
+    <div class="scroll"><table id="ft"></table></div>
+  </div>
+</div>
+
+<div class="two">
+  <div class="card">
+    <h2>Distribution des sauts (400 lookups aléatoires)</h2>
+    <button class="g" id="bench1" style="margin-bottom:8px">Mesurer</button>
+    <svg id="hist" viewBox="0 0 500 220"></svg>
+  </div>
+  <div class="card">
+    <h2>Passage à l'échelle : sauts moyens selon N</h2>
+    <button class="g" id="bench2" style="margin-bottom:8px">Mesurer (m = 12)</button>
+    <svg id="scale" viewBox="0 0 500 220"></svg>
+  </div>
+</div>
+
+<div class="two">
+  <div class="card"><h2>Nœuds</h2><div class="scroll"><table id="nt"></table></div></div>
+  <div class="card"><h2>Journal</h2><div class="log" id="log"></div></div>
+</div>
+
+<script>
+"use strict";
+function sha1hex(msg){const rl=(n,s)=>((n<<s)|(n>>>(32-s)))>>>0;const b=Array.from(new TextEncoder().encode(msg)),ml=b.length*8;b.push(128);while(b.length%64!==56)b.push(0);for(let i=7;i>=0;i--)b.push(i>=4?0:(ml>>>(i*8))&255);
+let h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0;
+for(let o=0;o<b.length;o+=64){const w=[];for(let i=0;i<16;i++)w[i]=((b[o+4*i]<<24)|(b[o+4*i+1]<<16)|(b[o+4*i+2]<<8)|b[o+4*i+3])>>>0;for(let i=16;i<80;i++)w[i]=rl(w[i-3]^w[i-8]^w[i-14]^w[i-16],1);
+let a=h0,bb=h1,c=h2,d=h3,e=h4;for(let i=0;i<80;i++){let f,k;if(i<20){f=(bb&c)|(~bb&d);k=0x5A827999}else if(i<40){f=bb^c^d;k=0x6ED9EBA1}else if(i<60){f=(bb&c)|(bb&d)|(c&d);k=0x8F1BBCDC}else{f=bb^c^d;k=0xCA62C1D6}
+const t=(rl(a,5)+(f>>>0)+e+k+w[i])>>>0;e=d;d=c;c=rl(bb,30);bb=a;a=t}h0=(h0+a)>>>0;h1=(h1+bb)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0}
+return[h0,h1,h2,h3,h4].map(x=>x.toString(16).padStart(8,"0")).join("")}
+
+/* ---------- Modèle ---------- */
+const $=id=>document.getElementById(id);
+const S={m:6,size:64,ids:[],keys:new Map(),sel:null,last:null,avg:null};
+const inOpen=(k,a,b)=>a<b?(a<k&&k<b):(k>a||k<b);
+const inHalf=(k,a,b)=>a<b?(a<k&&k<=b):(k>a||k<=b);
+const hid=t=>Number(BigInt("0x"+sha1hex(t))%BigInt(S.size));
+const toId=t=>{t=String(t).trim();return /^\d+$/.test(t)?Number(t)%S.size:hid(t)};
+const succOf=(k,ids=S.ids)=>{for(const i of ids)if(i>=k)return i;return ids[0]};
+const nextOf=(n,ids=S.ids)=>ids[(ids.indexOf(n)+1)%ids.length];
+const fingersOf=(n,ids=S.ids,m=S.m,size=S.size)=>Array.from({length:m},(_,i)=>succOf((n+2**i)%size,ids));
+function lookup(start,k,ids=S.ids,m=S.m,size=S.size,withSteps=false){
+  let n=start;const path=[n],steps=[];
+  for(let g=0;g<4*m+10;g++){
+    const s=ids.length>1?ids[(ids.indexOf(n)+1)%ids.length]:n;
+    if(inHalf(k,n,s)){ if(withSteps)steps.push({n,txt:`N${n} : ${k} ∈ ]${n}, ${s}] → responsable : <b>N${s}</b>`,end:true}); if(s!==n)path.push(s); return{path,steps,res:s,hops:path.length-1}}
+    const f=fingersOf(n,ids,m,size);let nx=n,fi=-1;
+    for(let i=m-1;i>=0;i--)if(inOpen(f[i],n,k)){nx=f[i];fi=i;break}
+    if(nx===n){ if(withSteps)steps.push({n,txt:`N${n} : aucun doigt utile → successeur N${s}`,end:true}); path.push(s); return{path,steps,res:s,hops:path.length-1}}
+    if(withSteps)steps.push({n,txt:`N${n} : ${k} ∉ ]${n}, ${s}] → doigt <span style="color:var(--vio)">i=${fi}</span> (${(n+2**fi)%size}) → <b>N${nx}</b>`});
+    path.push(nx);n=nx;
+  }
+  return{path,steps,res:path[path.length-1],hops:path.length-1};
+}
+const log=h=>{const d=document.createElement("div");d.innerHTML=`<b>${new Date().toTimeString().slice(0,8)}</b> ${h}`;$("log").prepend(d)};
+const setMsg=t=>$("msg").textContent=t||"";
+
+/* ---------- Rendu ---------- */
+const CX=300,CY=300,RR=225;
+const ang=id=>-Math.PI/2+2*Math.PI*id/S.size;
+const P=(id,r=RR)=>[CX+r*Math.cos(ang(id)),CY+r*Math.sin(ang(id))];
+function arcPath(a,b){const p=P(a),q=P(b),c=[CX+((p[0]+q[0])/2-CX)*.3,CY+((p[1]+q[1])/2-CY)*.3];
+  return `M${p[0].toFixed(1)} ${p[1].toFixed(1)} Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${q[0].toFixed(1)} ${q[1].toFixed(1)}`}
+function drawRuler(){
+  let h=`<circle cx="${CX}" cy="${CY}" r="${RR}" fill="none" stroke="var(--ln)" stroke-width="3"/>`;
+  const step=Math.max(1,S.size/16);
+  for(let i=0;i<S.size;i+=step){const a=P(i,RR-8),b=P(i,RR+8),t=P(i,RR-38);h+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--mut)"/><text x="${t[0]}" y="${t[1]+3}" fill="var(--mut)" font-size="10" text-anchor="middle">${i}</text>`}
+  h+=`<text x="${CX}" y="${CY-4}" text-anchor="middle" font-size="16" font-weight="700" fill="var(--tx)">${S.ids.length} nœuds</text><text x="${CX}" y="${CY+16}" text-anchor="middle" font-size="11" fill="var(--mut)">espace [0, ${S.size-1}] · m=${S.m}</text>`;
+  if(S.sel!=null&&S.ids.includes(S.sel)){const seen=new Set();for(const f of fingersOf(S.sel)){if(f===S.sel||seen.has(f))continue;seen.add(f);h+=`<path class="fa" d="${arcPath(S.sel,f)}"/>`}}
+  if(S.last){S.last.path.forEach((n,i)=>{if(i===0)return;h+=`<path class="arc" pathLength="1" style="animation-delay:${(i-1)*.75}s" d="${arcPath(S.last.path[i-1],n)}"/>`})}
+  for(const[k,l] of S.keys){const p=P(k,RR+24);h+=`<path d="M${p[0]} ${p[1]-7} l5 7 l-5 7 l-5 -7z" fill="var(--amb)"><title>clé ${k} (${l}) → N${succOf(k)}</title></path>`}
+  if(S.last){const p=P(S.last.k,RR+26),t=P(S.last.k,RR+46);h+=`<path d="M${p[0]} ${p[1]-9} l8 9 l-8 9 l-8 -9z" fill="none" stroke="var(--amb)" stroke-width="2.4"/><text x="${t[0]}" y="${t[1]+3}" fill="var(--amb)" font-size="11" font-weight="700" text-anchor="middle">k=${S.last.k}</text>`}
+  const big=S.ids.length<=30,r=big?14:6;
+  for(const n of S.ids){const on=S.last&&S.last.path.includes(n),sel=n===S.sel,p=P(n);
+    h+=`<g class="nd" data-id="${n}"><title>N${n}</title><circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="${on?"var(--amb)":sel?"var(--vio)":"var(--teal)"}" stroke="${sel?"var(--tx)":"var(--p)"}" stroke-width="2"/>`+
+      (big?`<text x="${p[0]}" y="${p[1]+3.5}" fill="#fff" font-size="10" font-weight="700" text-anchor="middle" pointer-events="none">${n}</text>`:"")+`</g>`;}
+  $("ruler").innerHTML=h;
+}
+function drawTables(){
+  const n=S.sel;$("fn").textContent=n!=null?"· N"+n:"";
+  if(n!=null&&S.ids.includes(n)){const f=fingersOf(n);$("ft").innerHTML=`<tr><th>i</th><th>start</th><th>intervalle</th><th>succ</th></tr>`+f.map((x,i)=>`<tr><td>${i}</td><td>${(n+2**i)%S.size}</td><td>[${(n+2**i)%S.size}, ${(n+2**(i+1))%S.size})</td><td style="color:var(--teal)">N${x}</td></tr>`).join("")}
+  else $("ft").innerHTML=`<tr><td style="color:var(--mut)">Clique sur un nœud de la règle.</td></tr>`;
+  const own=new Map(S.ids.map(i=>[i,[]]));for(const k of S.keys.keys())own.get(succOf(k)).push(k);
+  $("nt").innerHTML=`<tr><th>nœud</th><th>pred</th><th>succ</th><th>part de l'espace</th><th>clés</th></tr>`+S.ids.map((i,j)=>{const p=S.ids[(j-1+S.ids.length)%S.ids.length];const w=(i-p+S.size)%S.size||S.size;
+    return `<tr><td>N${i}</td><td>N${p}</td><td>N${nextOf(i)}</td><td>${(100*w/S.size).toFixed(1)} %</td><td>${own.get(i).join(", ")||"–"}</td></tr>`}).join("");
+  const o=S.ids.map(i=>`<option value="${i}">N${i}</option>`).join("");
+  const c=$("start").value;$("start").innerHTML=`<option value="">au hasard</option>`+o;if(S.ids.includes(+c))$("start").value=c;
+  const c2=$("rm").value;$("rm").innerHTML=o;if(S.ids.includes(+c2))$("rm").value=c2;
+}
+function kpis(){
+  $("k1").textContent=S.ids.length;$("k2").textContent=S.size;$("k3").textContent=S.keys.size;
+  $("k4").textContent=S.last?S.last.hops:"–";$("k5").textContent=S.avg==null?"–":S.avg.toFixed(2);
+  $("k6").textContent=S.ids.length>1?(Math.log2(S.ids.length)/2).toFixed(2):"–";
+  $("tag").textContent=`m=${S.m} · ${S.ids.length} nœuds`;
+}
+function steps(){
+  $("steps").innerHTML=S.last?S.last.steps.map((s,i)=>`<li class="${s.end?"ok":""}" style="animation-delay:${i*.75}s">${s.txt}</li>`).join("")+
+   `<li class="ok" style="animation-delay:${S.last.steps.length*.75}s">Résultat : <b>N${S.last.res}</b> en <b>${S.last.hops}</b> saut${S.last.hops>1?"s":""}.</li>`:"";
+}
+function render(){drawRuler();drawTables();kpis()}
+
+/* ---------- Actions ---------- */
+function setRing(ids,m){S.m=m;S.size=2**m;S.ids=[...ids].sort((a,b)=>a-b);S.keys=new Map();S.last=null;S.avg=null;S.sel=S.ids[0];steps();render()}
+$("create").onclick=()=>{try{const m=Math.min(12,Math.max(3,parseInt($("m").value)||6));$("m").value=m;S.size=2**m;S.m=m;
+  const set=new Map();for(const t of $("nodes").value.split(/[\s,;]+/).filter(Boolean)){const id=toId(t);if(set.has(id))throw new Error(`Collision : ${t} → ${id} déjà pris.`);set.set(id,t)}
+  if(!set.size)throw new Error("Donne au moins un nœud.");setMsg("");setRing(set.keys(),m);log(`Anneau créé : ${S.ids.length} nœuds, m=${m}.`)}catch(e){setMsg(e.message)}};
+$("rand").onclick=()=>{const m=Math.min(12,Math.max(3,parseInt($("m").value)||6));$("m").value=m;const size=2**m,n=Math.min(size,Math.max(1,parseInt($("nr").value)||10)),s=new Set();
+  while(s.size<n)s.add(Math.floor(Math.random()*size));$("nodes").value=[...s].sort((a,b)=>a-b).join(", ");setMsg("");setRing(s,m);log(`Anneau aléatoire : ${n} nœuds, m=${m}.`)};
+$("add").onclick=()=>{try{const t=$("addid").value.trim();let id;if(!t){let g=0;do{id=Math.floor(Math.random()*S.size)}while(S.ids.includes(id)&&g++<9999)}else id=toId(t);
+  if(S.ids.includes(id))throw new Error(`Le nœud ${id} existe déjà.`);setMsg("");S.ids=[...S.ids,id].sort((a,b)=>a-b);S.sel=id;S.last=null;steps();render();log(`N${id} rejoint l'anneau (successeur N${nextOf(id)}).`);$("addid").value=""}catch(e){setMsg(e.message)}};
+$("del").onclick=()=>{const id=+$("rm").value;if(S.ids.length<2){setMsg("Il faut garder au moins un nœud.");return}setMsg("");
+  const s=nextOf(id);S.ids=S.ids.filter(x=>x!==id);S.sel=s;S.last=null;steps();render();log(`N${id} quitte l'anneau. Ses clés passent à N${s}.`)};
+$("go").onclick=()=>{const t=$("key").value.trim();if(!t||!S.ids.length)return;const k=toId(t),sv=$("start").value,st=sv===""?S.ids[Math.floor(Math.random()*S.ids.length)]:+sv;
+  const r=lookup(st,k,S.ids,S.m,S.size,true);S.last={...r,k};S.sel=st;steps();render();log(`lookup(${t}) = id ${k} depuis N${st} → <b>N${r.res}</b> en ${r.hops} saut(s).`)};
+$("put").onclick=()=>{const t=$("key").value.trim();if(!t)return;const k=toId(t);S.keys.set(k,t);render();log(`Clé ${t} (id ${k}) stockée sur N${succOf(k)}.`)};
+$("ruler").addEventListener("click",e=>{const g=e.target.closest(".nd");if(!g)return;S.sel=+g.dataset.id;drawRuler();drawTables()});
+
+/* ---------- Graphiques ---------- */
+function bars(svg,data,labels,color){
+  const W=500,H=220,L=36,B=30,T=14,max=Math.max(1,...data),bw=(W-L-10)/data.length;
+  let h=`<line x1="${L}" y1="${H-B}" x2="${W-6}" y2="${H-B}" stroke="var(--ln)"/>`;
+  for(let i=0;i<=4;i++){const y=H-B-(H-B-T)*i/4;h+=`<line x1="${L}" y1="${y}" x2="${W-6}" y2="${y}" stroke="var(--ln)" opacity=".5"/><text x="${L-6}" y="${y+3}" fill="var(--mut)" font-size="10" text-anchor="end">${Math.round(max*i/4)}</text>`}
+  data.forEach((v,i)=>{const bh=(H-B-T)*v/max,x=L+i*bw+3;h+=`<rect x="${x}" y="${H-B-bh}" width="${bw-6}" height="${bh}" rx="3" fill="${color}"><title>${labels[i]} saut(s) : ${v}</title></rect><text x="${x+(bw-6)/2}" y="${H-B+14}" fill="var(--mut)" font-size="10" text-anchor="middle">${labels[i]}</text>`});
+  h+=`<text x="${W/2}" y="${H-2}" fill="var(--mut)" font-size="10" text-anchor="middle">nombre de sauts</text>`;
+  svg.innerHTML=h;
+}
+$("bench1").onclick=()=>{if(!S.ids.length)return;const c=[];let tot=0;const R=400;
+  for(let i=0;i<R;i++){const r=lookup(S.ids[Math.floor(Math.random()*S.ids.length)],Math.floor(Math.random()*S.size));c[r.hops]=(c[r.hops]||0)+1;tot+=r.hops}
+  const d=Array.from({length:c.length},(_,i)=>c[i]||0);bars($("hist"),d,d.map((_,i)=>i),"var(--teal)");S.avg=tot/R;kpis();log(`Mesure : ${R} lookups, moyenne ${S.avg.toFixed(2)} sauts, max ${d.length-1}.`)};
+$("bench2").onclick=()=>{const m=12,size=4096,Ns=[4,8,16,32,64,128,256,512],pts=[];
+  for(const N of Ns){const s=new Set();while(s.size<N)s.add(Math.floor(Math.random()*size));const ids=[...s].sort((a,b)=>a-b);let t=0;const R=200;
+    for(let i=0;i<R;i++)t+=lookup(ids[Math.floor(Math.random()*N)],Math.floor(Math.random()*size),ids,m,size).hops;pts.push([N,t/R])}
+  const W=500,H=220,L=36,B=30,T=14,R=10,mx=Math.max(...pts.map(p=>p[1]),Math.log2(512)/2)*1.15,xs=i=>L+(W-L-R)*i/(Ns.length-1),ys=v=>H-B-(H-B-T)*v/mx;
+  let h=`<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="var(--ln)"/>`;
+  for(let i=0;i<=4;i++){const y=H-B-(H-B-T)*i/4;h+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--ln)" opacity=".5"/><text x="${L-6}" y="${y+3}" fill="var(--mut)" font-size="10" text-anchor="end">${(mx*i/4).toFixed(1)}</text>`}
+  h+=`<path d="${Ns.map((N,i)=>(i?"L":"M")+xs(i)+" "+ys(Math.log2(N)/2)).join(" ")}" fill="none" stroke="var(--vio)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  h+=`<path d="${pts.map((p,i)=>(i?"L":"M")+xs(i)+" "+ys(p[1])).join(" ")}" fill="none" stroke="var(--teal)" stroke-width="2.5"/>`;
+  pts.forEach((p,i)=>{h+=`<circle cx="${xs(i)}" cy="${ys(p[1])}" r="4.5" fill="var(--teal)"><title>N=${p[0]} : ${p[1].toFixed(2)} sauts</title></circle><text x="${xs(i)}" y="${H-B+14}" fill="var(--mut)" font-size="10" text-anchor="middle">${p[0]}</text>`});
+  h+=`<text x="${W-R}" y="${T+4}" fill="var(--teal)" font-size="11" text-anchor="end">● mesuré</text><text x="${W-R}" y="${T+18}" fill="var(--vio)" font-size="11" text-anchor="end">- - ½·log₂ N</text><text x="${W/2}" y="${H-2}" fill="var(--mut)" font-size="10" text-anchor="middle">N (nombre de nœuds)</text>`;
+  $("scale").innerHTML=h;log("Passage à l'échelle mesuré pour N = 4 à 512 (m = 12, 200 lookups par point).")};
+
+
+/* ---------- Exercices du TD ---------- */
+const EX1=[16,32,45,80,96,112],EX2=[1,8,14,21,32,38,42,48,51,56];
+function load(ids,m,note){$("m").value=m;$("nodes").value=ids.join(", ");setRing(ids,m);log(note);$("tdnote").textContent=note}
+function ask(start,key){$("key").value=key;$("start").value=String(start);$("go").click()}
+const TD={
+  e1:()=>load(EX1,7,"Ex.1 : m = 7, nœuds 16, 32, 45, 80, 96, 112."),
+  e1t:()=>{if(S.m!==7||!S.ids.includes(80))TD.e1();S.sel=80;render();$("tdnote").textContent="Finger table de N80 : 81→N96, 82→N96, 84→N96, 88→N96, 96→N96, 112→N112, 16→N16."},
+  e1l:()=>{if(S.m!==7||!S.ids.includes(80))TD.e1();ask(80,42);$("tdnote").textContent="Lookup 42 depuis N80 : N80 → N16 → N32 → N45, soit 3 sauts (5 avec la recherche linéaire)."},
+  e1j:()=>{if(S.m!==7)TD.e1();$("addid").value="64";$("add").click();$("tdnote").textContent="Join N64 : N64 devient le successeur de 48 à 64. Doigts modifiés : N16 (i=5), N32 (i=4,5), N45 (i=0..4), N112 (i=6) pointent vers N64."},
+  e1c:()=>{if(S.m!==7||!S.ids.includes(45))TD.e1();$("rm").value="45";$("del").click();$("tdnote").textContent="Panne de N45 : ses clés passent à son successeur. Les doigts de N32 (i=0..3) qui visaient N45 pointent vers le nœud suivant (N64 si N64 a rejoint, sinon N80)."},
+  e2:()=>load(EX2,6,"Ex.2 : m = 6, nœuds 1, 8, 14, 21, 32, 38, 42, 48, 51, 56."),
+  e2t:()=>{if(S.m!==6||!S.ids.includes(8))TD.e2();S.sel=8;render();$("tdnote").textContent="Finger table de N8 : 9→N14, 10→N14, 12→N14, 16→N21, 24→N32, 40→N42."},
+  e2l:()=>{if(S.m!==6||!S.ids.includes(8))TD.e2();ask(8,54);$("tdnote").textContent="Lookup 54 depuis N8 : N8 → N42 → N51 → N56, soit 3 sauts (8 avec la recherche linéaire)."},
+  e2c:()=>{if(S.m!==6||!S.ids.includes(42))TD.e2();$("rm").value="42";$("del").click();$("tdnote").textContent="Panne de N42 : N8 (i=5), N32 (i=3) et N38 (i=0,1,2) pointent maintenant vers N48."},
+  e2l2:()=>{if(S.m!==6)TD.e2();ask(8,54);$("tdnote").textContent="Après la panne de N42 et la réparation des tables : N8 → N48 → N51 → N56, soit 3 sauts. Avant la réparation (N8 pointe encore vers N42 mort), il fallait passer par N32 → N48 → N51 → N56, soit 4 sauts."}
+};
+document.querySelectorAll("[data-td]").forEach(b=>b.onclick=()=>TD[b.dataset.td]());
+
+/* ---------- Démarrage ---------- */
+setRing([1,8,14,21,32,38,42,48,51,56],6);
+log("Anneau d'exemple chargé. Lance « Chercher » pour la clé 54.");
+</script>
+</body>
+</html>
